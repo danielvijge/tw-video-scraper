@@ -1,0 +1,9 @@
+# generate video thumbs with tw-video-scraper
+# http://server.vijge.net/tw-video-scraper
+# change path below if needed
+exec: python /usr/local/twonkymedia/cgi-bin/tw-video-scraper.py $infile $outfile
+# capabilities
+from=video/*
+to=image/jpeg
+videothumb
+synchronous
