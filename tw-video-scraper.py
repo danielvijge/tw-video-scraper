@@ -72,7 +72,7 @@ def main():
 	# for windows path names
 	if sys.argv[1].find('\\') >= 0:
 		sys.argv[1] = sys.argv[1].replace('\\','/')
-		
+
 	serie = Serie(sys.argv[1])
 	
 	if serie.isSerie():
@@ -93,10 +93,12 @@ def main():
 		if Config['generatecommand'] != '':
 			print 'Generating thumbnail...'
 			try:
-				import subprocess as sub
+				#import subprocess as sub
+				import os
 				Config['generatecommand'] = Config['generatecommand'].replace('$infile',sys.argv[1]).replace('$outfile',sys.argv[2])
-				p = sub.Popen(Config['generatecommand'],stdout=sub.PIPE,stderr=sub.PIPE,shell=True)
-				output, errors = p.communicate()
+				os.system(Config['generatecommand'])
+				#p = sub.Popen(Config['generatecommand'],stdout=sub.PIPE,stderr=sub.PIPE,shell=True)
+				#output, errors = p.communicate()
 			except:
 				print 'Failed to execute generate thumbnail command'
 				
@@ -162,7 +164,7 @@ class Serie:
 	
 	def _retrieveID(self):
 		if db.isEnabled():
-			db.execute('SELECT id FROM video WHERE type=\'serie\' and name=\''+self.name+'\'')		
+			db.execute('SELECT id FROM video WHERE type=\'serie\' and name=\''+db.escape(self.name)+'\'')		
 			if db.rowcount() > 0:
 				self.id = str(db.fetchrow()[0])
 		
@@ -176,7 +178,7 @@ class Serie:
 						self.id = node.getElementsByTagName('seriesid')[0].firstChild.nodeValue
 				
 				if self.id and db.isEnabled():
-					db.execute('INSERT INTO video (id,type,name) VALUES ('+str(self.id)+',\'serie\',\''+self.name+'\')')
+					db.execute('INSERT INTO video (id,type,name) VALUES ('+str(db.escape(self.id))+',\'serie\',\''+db.escape(self.name)+'\')')
 			else:
 				print 'Could not connect to theTVDB.com server.'
 		
@@ -247,9 +249,9 @@ class Movie:
 		
 		if db.isEnabled():			
 			if year:
-				db.execute('SELECT id FROM video WHERE type=\'movie\' and name=\''+name+'\' and year='+year)
+				db.execute('SELECT id FROM video WHERE type=\'movie\' and name=\''+db.escape(name)+'\' and year='+db.escape(year))
 			else:
-				db.execute('SELECT id FROM video WHERE type=\'movie\' and name=\''+name+'\'')	
+				db.execute('SELECT id FROM video WHERE type=\'movie\' and name=\''+db.escape(name)+'\'')	
 			if db.rowcount() > 0:
 				self.id = str(db.fetchrow()[0])
 				apicall = URL('http://api.themoviedb.org/2.1/Movie.getInfo/en/xml/'+Config['moviedbapikey']+'/'+self.id).open()
@@ -282,9 +284,9 @@ class Movie:
 					if db.isEnabled():
 						self.id = node.getElementsByTagName('id')[0].firstChild.nodeValue
 						if year:
-							db.execute('INSERT INTO video (id,type,name,year) VALUES ('+str(self.id)+',\'movie\',\''+name+'\','+year+')')
+							db.execute('INSERT INTO video (id,type,name,year) VALUES ('+str(db.escape(self.id))+',\'movie\',\''+db.escape(name)+'\','+db.escape(year)+')')
 						else:
-							db.execute('INSERT INTO video (id,type,name,year) VALUES ('+str(self.id)+',\'movie\',\''+name+'\')')	
+							db.execute('INSERT INTO video (id,type,name,year) VALUES ('+str(db.escape(self.id))+',\'movie\',\''+db.escape(name)+'\')')	
 
 					if node.getElementsByTagName('images')[0]:
 						for node2 in node.getElementsByTagName('image'):
@@ -397,7 +399,10 @@ class Database:
 	def rowcount(self):
 		if not self._sql:
 			return False
-		return len(self._result)
+		try:
+			return len(self._result)
+		except:
+			return False
 	
 	def fetchrow(self):
 		if not self._sql:
@@ -412,6 +417,9 @@ class Database:
 		if not self._sql:
 			return False
 		return self._result
+
+	def escape(self, str):
+		return str.replace("'",'').replace('"','')
 
 class URL:
 	url = None
