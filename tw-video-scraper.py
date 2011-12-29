@@ -16,7 +16,7 @@ settings = {
 	# of a movie/serie. By knowing the parent dir,the
 	# script knows if it should analyse the name
 	# E.g. ~/download/my.movie.2011.avi vs. ~/download/My.Movie.2011/part1.avi
-	'parentdir': ['download','series','movies'],
+	'parentdir': ['download','series','movies','sample'],
 	
 	# Regular expression patterns to determine if
 	# a file is a series. First match should product
