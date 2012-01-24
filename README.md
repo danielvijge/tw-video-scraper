@@ -131,11 +131,11 @@ The current code is very Linux oriented. All paths are Linux paths. If you want 
 1. If you also want to generate thumbnails if no thumbnail could be found, install [ffmpeg](http://ffmpeg.zeranoe.com/builds/) too.
 1. Download the script files, and extract the files `python-tw-video-scraper.desc`, `python.location`, and `tw-video-scraper.py` to a temporary location, e.g. your desktop.
 1. Open the file `python.location` and change it to the path where Python is installed. In the default case `C:/Python27` This should just be the directory, NOT the whole path name including `python.exe`.
-1. Open the file `python-tw-video-scraper.desc` and change `/usr/local/twonkymedia/cgi-bin/tw-video-scraper.py` to `"C:\Program Files (x86)\TwonkyMedia\cgi-bin\tw-video-scraper.py"` (with quotes around it, because the path contains a space; replace the path if Twonky is installed somewhere else).
+1. Open the file `python-tw-video-scraper.desc` and change `/usr/local/twonkymedia/cgi-bin/tw-video-scraper.py` to `"C:/Program Files (x86)/TwonkyMedia/cgi-bin/tw-video-scraper.py"` (with quotes around it, because the path contains a space; replace the path if Twonky is installed somewhere else).
 1. Open the file `tw-video-scraper.py` and make some changes there:
-	- Change the location of the database to `c:\tmp\tw-video-scraper\tw-video-scraper.db`. You can choose any directory you want, just make sure the script has write access.
-	- Change the location of the tmpdir to `c:\tmp\tw-video-scraper\`. Again, you can choose any directory.
-	- Change the location of the generatecommand. Replace `ffmpeg` with the full path to ffmpeg, e.g. `"C:\Program Files (x86)\ffmpeg\ffmpeg.exe"` (add quotes around it if the path contains spaces).
+	- Change the location of the database to `c:/tmp/tw-video-scraper/tw-video-scraper.db`. You can choose any directory you want, just make sure the script has write access.
+	- Change the location of the tmpdir to `c:/tmp/tw-video-scraper/`. Again, you can choose any directory.
+	- Change the location of the generatecommand. Replace `ffmpeg` with the full path to ffmpeg, e.g. `"C:/Program Files (x86)/ffmpeg/ffmpeg.exe"` (add quotes around it if the path contains spaces).
 1. Make sure Twonky is stopped.
 1. Copy the three files to `C:\Program Files (x86)\TwonkyMedia\cgi-bin`.
 1. Restart Twonky.
