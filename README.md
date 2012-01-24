@@ -125,7 +125,7 @@ or
 
 ## Windows users
 
-The current code is very Linux oriented. All paths are Linux paths. If you want to use this script on Window, you can, but you have to make some modifications. In all paths, use a / instead of a \. Also, you will have to install some extra software. Make sure you have a good text editor that can handle Unix line endings.
+The current code is very Linux oriented. All paths are Linux paths. If you want to use this script on Window, you can, but you have to make some modifications. In all paths, use a / instead of a \\. Also, you will have to install some extra software. Make sure you have a good text editor that can handle Unix line endings.
 
 1. Install [Python](http://www.python.org/download/). It was tested with the 2.7.x release. If you already have a newer version, that one might work too.
 1. If you also want to generate thumbnails if no thumbnail could be found, install [ffmpeg](http://ffmpeg.zeranoe.com/builds/) too.
