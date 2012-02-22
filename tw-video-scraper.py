@@ -23,7 +23,7 @@ settings = {
 	# the title, second match the season, third match
 	# the episode number
 	'seriepatterns': ['(.*?)S(\d{1,2})E(\d{2})(.*)',
-					  '(.*?)\[?(\d{1,2})x?(\d{2})\]?(.*)',
+					  '(.*?)\[?(\d{1,2})x(\d{2})\]?(.*)',
 					  '(.*?)Season.?(\d{1,2}).*?Episode.?(\d{1,2})(.*)'],
 	
 	# TVDB api settings
@@ -37,6 +37,7 @@ settings = {
 					  '(.*?)\[(\d{4})\](.*)',
 					  '(.*?)\{(\d{4})\}(.*)',
 					  '(.*?)(\d{4})(.*)',
+					  '(.*?)\.(avi|mkv|mpg|mgep|mp4)',
 					  '(.*)'],
 	# MovieDB api settings
 	'moviedbapikey': 'a8b9f96dde091408a03cb4c78477bd14',
@@ -171,17 +172,17 @@ class Serie:
 		if not self.id:
 			apicall = URL('http://www.thetvdb.com/api/GetSeries.php?language=en&seriesname='+self.name).open()
 			if apicall:
-				from xml.dom import minidom
-				dom = minidom.parse(apicall)
-				for node in dom.getElementsByTagName('Series'):
-					if node.getElementsByTagName('SeriesName')[0].firstChild.nodeValue.lower().replace(':','').replace('/','') == self.name:
-						self.id = node.getElementsByTagName('seriesid')[0].firstChild.nodeValue
+				from xml.etree.ElementTree import ElementTree
+				tree = ElementTree()
+				tree.parse(apicall)
+				for series in tree.findall('Series'):
+					if self._cleanupName(series.find('SeriesName').text) == self.name:
+						self.id = series.find('seriesid').text
 				
 				if self.id and db.isEnabled():
 					db.execute('INSERT INTO video (id,type,name) VALUES ('+str(db.escape(self.id))+',\'serie\',\''+db.escape(self.name)+'\')')
 			else:
 				print 'Could not connect to theTVDB.com server.'
-		
 		return self.id
 	
 	
@@ -207,17 +208,23 @@ class Serie:
 		return False
 	
 	def _getTVDBThumbnail(self):
-		from xml.dom import minidom
-		
 		if self.id:
 			if self._getTVDBzipfile():
-				dom = minidom.parse(Config['tmpdir']+self.id+'/'+Config['tvdblang']+'.xml')
-				for node in dom.getElementsByTagName('Episode'):
-					if int(node.getElementsByTagName('SeasonNumber')[0].firstChild.nodeValue) == self.season and int(node.getElementsByTagName('EpisodeNumber')[0].firstChild.nodeValue) == self.episode:			
-						if node.getElementsByTagName('filename')[0].firstChild:		
-							self.thumbnail =  'http://www.thetvdb.com/banners/'+node.getElementsByTagName('filename')[0].firstChild.nodeValue
+				from xml.etree.ElementTree import ElementTree
+				tree = ElementTree()
+				tree.parse(Config['tmpdir']+self.id+'/'+Config['tvdblang']+'.xml')
+				for episode in tree.findall('Episode'):
+					if int(episode.find('SeasonNumber').text) == self.season and int(episode.find('EpisodeNumber').text) == self.episode:			
+						if episode.find('filename').text:		
+							self.thumbnail =  'http://www.thetvdb.com/banners/'+episode.find('filename').text
 							return True
 		return False
+	
+	def _cleanupName(self, name):
+		name = name.lower()
+		name = name.replace(':','')
+		name = name.replace('/','')
+		return name
 
 class Movie:
 	fileName = None
@@ -243,7 +250,8 @@ class Movie:
 		return self.thumbnail
 		
 	def _getMovieDBThumbnail(self, name, year = None):
-		from xml.dom import minidom
+		from xml.etree.ElementTree import ElementTree
+		tree = ElementTree()
 		
 		match = False
 		
@@ -263,38 +271,39 @@ class Movie:
 				apicall = URL('http://api.themoviedb.org/2.1/Movie.search/en/xml/'+Config['moviedbapikey']+'/'+name).open()
 		
 		if apicall:
-			dom = minidom.parse(apicall)
-			if int(dom.getElementsByTagName('opensearch:totalResults')[0].firstChild.nodeValue) == 1:
-				# If the search has only 1 result, presume that's the correct movie
+			tree.parse(apicall)
+			if int(tree.find('{%s}totalResults' % 'http://a9.com/-/spec/opensearch/1.1/').text) == 0:
+				# No results found, no need to parse everything
+				return False
+			if int(tree.find('{%s}totalResults' % 'http://a9.com/-/spec/opensearch/1.1/').text) == 1:
+				# If the search has only 1 result, assume that's the correct movie
 				match = True
 			
-			for node in dom.getElementsByTagName('movie'):
+			for movie in tree.findall('movies/movie'):
 				# try to match the name, and -if exist- the original name or alternative name
-				if self._cleanupName(node.getElementsByTagName('name')[0].firstChild.nodeValue) == name:
+				if self._cleanupName(movie.find('name').text) == name:
 					match = True
-				if node.getElementsByTagName('original_name') and node.getElementsByTagName('original_name')[0].firstChild:
-					if self._cleanupName(node.getElementsByTagName('original_name')[0].firstChild.nodeValue) == name:
+				if movie.find('original_name').text:
+					if self._cleanupName(movie.find('original_name').text) == name:
 						match = True
-				if node.getElementsByTagName('alternative_name') and node.getElementsByTagName('alternative_name')[0].firstChild:
-					if self._cleanupName(node.getElementsByTagName('alternative_name')[0].firstChild.nodeValue) == name:
+				if movie.find('alternative_name').text:
+					if self._cleanupName(movie.find('alternative_name').text) == name:
 						match = True
 				
 				if match:
 					
 					if db.isEnabled():
-						self.id = node.getElementsByTagName('id')[0].firstChild.nodeValue
+						self.id = movie.find('id').text
 						if year:
 							db.execute('INSERT INTO video (id,type,name,year) VALUES ('+str(db.escape(self.id))+',\'movie\',\''+db.escape(name)+'\','+db.escape(year)+')')
 						else:
 							db.execute('INSERT INTO video (id,type,name,year) VALUES ('+str(db.escape(self.id))+',\'movie\',\''+db.escape(name)+'\')')	
 
-					if node.getElementsByTagName('images')[0]:
-						for node2 in node.getElementsByTagName('image'):
-							if node2.attributes['type'].nodeValue == 'poster' and node2.attributes['size'].nodeValue == 'cover':
-								self.thumbnail = node2.attributes['url'].nodeValue
+					if movie.findall('images/image'):
+						for image in movie.findall('images/image'):
+							if image.attrib['type'] == 'poster' and image.attrib['size'] == 'cover':
+								self.thumbnail = image.attrib['url']
 								return True
-				# Set to False, for the next run of the loop
-				match = False
 		
 		return False
 		
@@ -329,7 +338,7 @@ class Movie:
 		# Next, try the file name
 		if self._matchPattern(self.file):
 			if self._getMovieDBThumbnail(self.name, self.year):
-				return True	
+				return True
 			
 		return False
 		
@@ -349,7 +358,12 @@ class Movie:
 
 		self.name = match.group(1).replace('.',' ').replace('_',' ').lower().strip()
 		if len(match.groups()) > 1:
-			self.year = match.group(2).strip()
+			# second match could also be avi,mkv,..., so check if it's an integer
+			try:
+				if int(match.group(2).strip()) == match.group(2).strip():
+					self.year = match.group(2).strip()
+			except:
+				self.year = None
 	
 		if self.name:
 			return True
