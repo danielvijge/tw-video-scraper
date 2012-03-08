@@ -380,7 +380,10 @@ class Database:
 	def __init__(self, database = None):
 		if database:
 			try:
-				import sqlite3
+				import sqlite3, os
+				
+				if not os.path.isdir(Config['tmpdir']):
+					os.makedirs(Config['tmpdir'])
 			
 				self._sql = sqlite3.connect(database)
 			
