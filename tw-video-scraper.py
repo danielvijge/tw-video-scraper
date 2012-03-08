@@ -3,13 +3,13 @@ settings = {
 	# use only a file name to use the database in
 	# the current working directory
 	# Leave empty to disable the database
-	'database': '/var/twonkymedia/twonkymedia/tw-video-scraper.db',
+	'database': r'/var/twonkymedia/twonkymedia/tw-video-scraper.db',
 	
 	# Path where to download and extract the files
 	# downloaded from TVDB. The script will check
 	# if a file already exists, so it will not be
 	# downloaded again.
-	'tmpdir': '/tmp/tw-video-scraper/',
+	'tmpdir': r'/tmp/tw-video-scraper/',
 
 	# List of name of the parent directories
 	# Used for matching the directory name of the name
@@ -52,7 +52,7 @@ settings = {
 	# If no thumbnail can be found, a thumbnail can be generated
 	# using the following command. Leave empty to disable generating
 	# thumbnails
-	'generatecommand': 'ffmpeg -itsoffset -30 -i "$infile" -y -vcodec mjpeg -vframes 1 -an -f rawvideo -s 624x352 "$outfile"',
+	'generatecommand': r'ffmpeg -itsoffset -30 -i "$infile" -y -vcodec mjpeg -vframes 1 -an -f rawvideo -s 624x352 "$outfile"',
 }
 
 def main():
