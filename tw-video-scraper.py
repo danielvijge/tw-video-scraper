@@ -67,7 +67,7 @@ def main():
 	
 	# Validate input arguments
 	if len(sys.argv) < 3:
-		print "Usage: tw-video-scraper.py inputmovie outputimage"
+		print("Usage: tw-video-scraper.py inputmovie outputimage")
 		exit()
 	
 	# for windows path names
@@ -83,22 +83,22 @@ def main():
 		thumbnail = movie.getThumbnail()
 
 	if thumbnail:
-		print 'Downloading file '+thumbnail+'...'
+		print("Downloading file "+thumbnail+"...")
 		URL(thumbnail).download(sys.argv[2])
 	else:
 		file = sys.argv[1]
 		if file.find('/') >= 0:
 			file = file[file.rindex('/')+1:]
 			
-		print 'Could not get enough information from file name \''+file+'\''
+		print("Could not get enough information from file name '"+file+"'")
 		if Config['generatecommand'] != '':
-			print 'Generating thumbnail...'
+			print("Generating thumbnail...")
 			try:
 				import os
 				Config['generatecommand'] = Config['generatecommand'].replace('$infile',sys.argv[1]).replace('$outfile',sys.argv[2])
 				os.system(Config['generatecommand'])
 			except:
-				print 'Failed to execute generate thumbnail command'
+				print("Failed to execute generate thumbnail command")
 				
 	
 class Serie:
@@ -179,7 +179,7 @@ class Serie:
 				if self.id and db.isEnabled():
 					db.execute('INSERT INTO video (id,type,name) VALUES ('+str(db.escape(self.id))+',\'serie\',\''+db.escape(self.name)+'\')')
 			else:
-				print 'Could not connect to theTVDB.com server.'
+				print("Could not connect to theTVDB.com server.")
 		return self.id
 	
 	
@@ -205,7 +205,7 @@ class Serie:
 			# zip and xml file are already downloaded, no need to download again	
 			return True
 
-		print 'Error retrieving/processing files from theTVDB.com'
+		print("Error retrieving/processing files from theTVDB.com")
 		return False
 	
 	def _getTVDBThumbnail(self):
@@ -388,9 +388,9 @@ class Database:
 				self._sql.commit()
 				self._enabled = True
 			except:
-				print "Could not open/create database. Running without database..."
+				print("Could not open/create database. Running without database...")
 		else:
-			print "Database disabled. Running without database..."
+			print("Database disabled. Running without database...")
 
 	def isEnabled(self):
 		return self._enabled
@@ -438,26 +438,47 @@ class Database:
 
 class URL:
 	url = None
+	ver = 2
 	
 	def __init__(self, url):
-		self.url = url
-	
+		import sys
+		if sys.version_info[0] > 2:
+			self.ver = 3
+		self.url = url.replace(' ','%20')
+		
 	def open(self):
-		import urllib
-		try:
-			return urllib.urlopen(self.url)
-		except:
-			return None
+		if self.ver == 3:
+			import urllib.request
+			try:
+				return urllib.request.urlopen(self.url)
+			except:
+				return None
+		else:
+			import urllib
+			try:
+				return urllib.urlopen(self.url)
+			except:
+				return None
 	
 	def download(self, location):
-		import urllib
-		try:
-			if urllib.urlretrieve(self.url, location):
-				return True
-			else:
+		if self.ver == 3:
+			import urllib.request
+			try:
+				if urllib.request.urlretrieve(self.url, location):
+					return True
+				else:
+					return False
+			except:
 				return False
-		except:
-			return False
+		else:
+			import urllib
+			try:
+				if urllib.urlretrieve(self.url, location):
+					return True
+				else:
+					return False
+			except:
+				return False
 
 class Zip:
 	zipfile = None
