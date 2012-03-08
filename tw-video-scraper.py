@@ -94,12 +94,9 @@ def main():
 		if Config['generatecommand'] != '':
 			print 'Generating thumbnail...'
 			try:
-				#import subprocess as sub
 				import os
 				Config['generatecommand'] = Config['generatecommand'].replace('$infile',sys.argv[1]).replace('$outfile',sys.argv[2])
 				os.system(Config['generatecommand'])
-				#p = sub.Popen(Config['generatecommand'],stdout=sub.PIPE,stderr=sub.PIPE,shell=True)
-				#output, errors = p.communicate()
 			except:
 				print 'Failed to execute generate thumbnail command'
 				
@@ -170,7 +167,7 @@ class Serie:
 				self.id = str(db.fetchrow()[0])
 		
 		if not self.id:
-			apicall = URL('http://www.thetvdb.com/api/GetSeries.php?language=en&seriesname='+self.name).open()
+			apicall = URL('http://www.thetvdb.com/api/GetSeries.php?language='+Config['tvdblang']+'&seriesname='+self.name).open()
 			if apicall:
 				from xml.etree.ElementTree import ElementTree
 				tree = ElementTree()
@@ -188,14 +185,18 @@ class Serie:
 	
 	def _getTVDBzipfile(self):
 		import os, time
+		# make a temp dir if it does not exist
 		if not os.path.isdir(Config['tmpdir']+self.id):
 			os.makedirs(Config['tmpdir']+self.id)
+		# check if the file already exists
 		if os.path.isfile(Config['tmpdir']+self.id+'/'+Config['tvdblang']+'.xml'):
+			# if it is older than config['cacherenew'] days, delete the files and download again
 			if os.path.getctime(Config['tmpdir']+self.id+'/'+Config['tvdblang']+'.xml') < time.time()-(Config['cacherenew']*86400):
 				os.remove(Config['tmpdir']+self.id+'/'+Config['tvdblang']+'.xml')
 				os.remove(Config['tmpdir']+self.id+'/banners.xml')
 				os.remove(Config['tmpdir']+self.id+'/actors.xml')
 				os.remove(Config['tmpdir']+self.id+'.zip')
+		# if the file does not exists, download it
 		if not os.path.isfile(Config['tmpdir']+self.id+'/'+Config['tvdblang']+'.xml'):
 			if URL('http://www.thetvdb.com/api/'+Config['tvdbapikey']+'/series/'+self.id+'/all/'+Config['tvdblang']+'.zip').download(Config['tmpdir']+self.id+'.zip'):
 				Zip(Config['tmpdir']+self.id+'.zip').extract(Config['tmpdir']+self.id)			
