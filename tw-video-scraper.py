@@ -382,7 +382,7 @@ class Database:
 			try:
 				import sqlite3, os
 				
-				dbdir = Config['database'].replace('\\','/'):
+				dbdir = Config['database'].replace('\\','/')
 				if dbdir.find('/') >= 0:
 					dbdir = dbdir[0:dbdir.rindex('/')+1]
 				if not os.path.isdir(dbdir):
