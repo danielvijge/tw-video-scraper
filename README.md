@@ -138,8 +138,9 @@ This script was originally written for Linux operating systems, but it can work 
 	- Change the location of the generatecommand. Replace `ffmpeg` with the full path to ffmpeg, e.g. `"C:\Program Files (x86)\ffmpeg\ffmpeg.exe"` (add quotes around it if the path contains spaces).
 1. Make sure Twonky is stopped.
 1. Copy the three files to `C:\Program Files (x86)\TwonkyMedia\cgi-bin`.
+1. Make sure there are not other plugins that provide the same functionality. To test, delete all files except `jpeg-scale.desc` and `cgi-jpegscale.exe`. If everything is working, you can place the other plugins back.
 1. Restart Twonky.
-1. Browse using the Flash browser, or using a television that supports thumbnails.
+1. Browse using the Flash browser (in version 6, or the normal browser for 7), or using a television that supports thumbnails.
 
 ## Future developments
 
