@@ -233,6 +233,7 @@ class Serie:
 		name = name.lower()
 		name = name.replace(':','')
 		name = name.replace('/','')
+		name = name.replace('\'',' ')
 		name = name.strip()
 		return name
 
@@ -273,7 +274,7 @@ class Movie:
 			if db.rowcount() > 0:
 				self.id = str(db.fetchrow()[0])
 				apicall = URL('http://api.themoviedb.org/2.1/Movie.getInfo/en/xml/'+Config['moviedbapikey']+'/'+self.id).open()
-		
+
 		if not self.id:
 			if year:
 				apicall = URL('http://api.themoviedb.org/2.1/Movie.search/en/xml/'+Config['moviedbapikey']+'/'+name+' '+year).open()
@@ -329,6 +330,7 @@ class Movie:
 		name = name.lower()
 		name = name.replace(':','')
 		name = name.replace('/','')
+		name = name.replace('\'',' ')
 		name = name.strip()
 		return name
 
@@ -358,7 +360,7 @@ class Movie:
 		if self._matchPattern(self.file):
 			if self._getMovieDBThumbnail(self.name, self.year):
 				return True
-			
+		
 		return False
 		
 	def _matchPattern(self, matchPattern):
