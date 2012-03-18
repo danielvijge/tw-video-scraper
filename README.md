@@ -1,8 +1,8 @@
 # tw-video-scraper
 
-`tw-video-scraper` is a small python script that can retrieve fan art
+`tw-video-scraper` is a Python script that can retrieve fan art
 thumbnail for a video file. It is designed to run with TwonkyMedia server,
-but can possibly be of use to others as well. It was designed for Debian Linux,
+but can possibly be of use to others as well. It was designed for (Debian) Linux,
 but can run on Windows as well. See the instruction below for Windows users.
 
 ## Background
@@ -18,13 +18,14 @@ this can be a problem. If there are opening credits, the thumbnail will display
 that. This might not be a very meaningful thumbnail for the video file.
 
 For a lot of movies and series there is fan art on the internet. This is a
-thumbnail that is more meaningful for a specific serie's episode.
+thumbnail that is more meaningful, such as a screenshot from a specific scene
+in a serie's episode, or the poster for a movie.
 `tw-video-scraper` tries to get the fan art thumbnail for a video file. If no
 thumbnail can be found, `ffmpeg` is used to generate a thumbnail.
 
 ## How to use
 
-`tw-video-scraper` is a python script that takes two arguments. The first is
+`tw-video-scraper` is a Python script that takes two arguments. The first is
 the name of the video file, the second is the output image file.
 
 	python tw-video-scraper.py /path/to/cool.serie.s01e04.htdv.avi /images/abc.jpg

@@ -148,12 +148,9 @@ class Serie:
 			match = pattern.match(self.file)
 			i = i+1
 
-		self.name = match.group(1).replace('.',' ').replace('_',' ').lower().strip()
+		self.name = self._cleanupFileName(match.group(1))
 		self.season = int(match.group(2))
 		self.episode = int(match.group(3))
-		
-		if self.name.endswith('-'):
-			self.name = self.name[0:len(self.name)-1].strip()
 		
 		if self._retrieveID():
 			return True
@@ -221,10 +218,21 @@ class Serie:
 							return True
 		return False
 	
+	def _cleanupFileName(self, name):
+		name = name.lower()
+		name = name.replace('.',' ')
+		name = name.replace('_',' ')
+		name = name.strip()
+		if name.endswith('-'):
+			name = name[0:len(name)-1]
+			name = name.strip()
+		return name
+	
 	def _cleanupName(self, name):
 		name = name.lower()
 		name = name.replace(':','')
 		name = name.replace('/','')
+		name = name.strip()
 		return name
 
 class Movie:
@@ -308,10 +316,18 @@ class Movie:
 		
 		return False
 		
+	def _cleanupFileName(self, name):
+		name = name.lower()
+		name = name.replace('.',' ')
+		name = name.replace('_',' ')
+		name = name.strip()
+		return name
+		
 	def _cleanupName(self, name):
 		name = name.lower()
 		name = name.replace(':','')
 		name = name.replace('/','')
+		name = name.strip()
 		return name
 
 	def _parseFileName(self):
@@ -357,7 +373,7 @@ class Movie:
 			match = pattern.match(matchPattern)
 			i = i+1
 
-		self.name = match.group(1).replace('.',' ').replace('_',' ').lower().strip()
+		self.name = self._cleanupFileName(match.group(1))
 		if len(match.groups()) > 1:
 			# second match could also be avi,mkv,..., so check if it's an integer
 			try:
