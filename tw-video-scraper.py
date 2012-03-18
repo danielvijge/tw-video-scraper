@@ -222,6 +222,7 @@ class Serie:
 		name = name.lower()
 		name = name.replace('.',' ')
 		name = name.replace('_',' ')
+		name = name.replace('\'',' ')
 		name = name.strip()
 		if name.endswith('-'):
 			name = name[0:len(name)-1]
@@ -320,6 +321,7 @@ class Movie:
 		name = name.lower()
 		name = name.replace('.',' ')
 		name = name.replace('_',' ')
+		name = name.replace('\'',' ')
 		name = name.strip()
 		return name
 		
