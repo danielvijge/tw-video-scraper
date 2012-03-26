@@ -3,7 +3,7 @@ settings = {
 	# use only a file name to use the database in
 	# the current working directory
 	# Leave empty to disable the database
-	'database': r'/var/twonkymedia/twonkymedia/tw-video-scraper.db',
+	'database': r'/var/twonky/TwonkyServer/tw-video-scraper.db',
 	
 	# Path where to download and extract the files
 	# downloaded from TVDB. The script will check
