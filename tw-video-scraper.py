@@ -48,6 +48,31 @@ settings = {
 	# This is the number of days after which to delete files
 	# and download it again
 	'cacherenew': 6,
+
+	# By default, images are stored in the cache folder under
+	# a subdirectory for the scale. E.g is a media renderer asks
+	# for a thumnail, it can request the scale, such as ?scale=100x100
+	# Images from this script are stored in that folder, but are saved
+	# in the original size.
+	# If you have multiple media renderers, they can request thumbnails
+	# in different sizes, leading to duplication of images.
+	# Valid option for this setting are:
+	# none : (Default option) Store images in a scale subdirectory, in the
+	#     original size
+	# resize : (Requires PIL Image) Store images in a scale subdirectory, resize
+	#     the image to the correct scale. If 'keepaspectratio' is set to 
+	#     false, the exact scale will be used, otherwise, the aspect ratio 
+	#     is preserved, adding black borders
+	# symlink : (Linux only) Store images in an 'Original' folder, and make
+	#     symbolic links for each entry in 'symbolicfolders'
+	'scaleoption': 'symlink',
+	'keepaspectratio': 'true',
+	'symbolicfolders': ['0x0','100x100','160x160', '1920x1080'],
+	
+	# Sometimes the downloaded JPEG cannot be in the correct format to display on
+	# certain deviced, e.g. the XBOX360 cannot display JPEG not of time JFIF standard
+	# Set this to true to this for all images (requires PIL Image)
+	'fixjpeg': 'true',
 	
 	# If no thumbnail can be found, a thumbnail can be generated
 	# using the following command. Leave empty to disable generating
@@ -100,6 +125,69 @@ def main():
 			except:
 				print("Failed to execute generate thumbnail command")
 				
+	if Config['fixjpeg'] == 'true':
+		try:
+			import Image
+			image = Image.open(sys.argv[2])
+			image.save(sys.argv[2])
+		except:
+			pass
+
+	if Config['scaleoption'] == 'resize':
+		# resize the image
+		try:
+			import Image, re
+			# try to get the scale option using regular expression
+			pattern = re.compile('(.*)/(\d{1,4})x(\d{1,4})/(.*)', re.IGNORECASE)
+			match = pattern.match(sys.argv[2])
+			scalewidth = int(match.group(2))
+			scaleheight = int(match.group(3))
+			
+			image = Image.open(sys.argv[2])
+			
+			if Config['keepaspectratio'] == 'true':
+				imagenew = Image.new('RGB', (scaleheight, scalewidth))
+				imagewidth = image.size[0]
+				imageheight = image.size[1]
+				
+				# landscape or portait?
+				if imageheight > imagewidth:
+					imagewidth = int(imagewidth * (float(scaleheight)/float(imageheight)))
+					centreoffset = (scalewidth-imagewidth)/2
+					image = image.resize((imagewidth, scaleheight), Image.ANTIALIAS)
+					imagenew.paste(image, (centreoffset, 0))
+				else:
+					imageheight = int(imageheight * (float(scalewidth)/float(imagewidth)))
+					centreoffset = (scaleheight-imageheight)/2
+					image = image.resize((scalewidth, imageheight), Image.ANTIALIAS)
+					imagenew.paste(image, (0, centreoffset))
+				image = imagenew
+			else:
+				image = image.resize((scalewidth, scaleheight), Image.ANTIALIAS)
+			
+			image.save(sys.argv[2])
+		except:
+			return
+
+	if Config['scaleoption'] == 'symlink':
+		# make symlinks
+		try:
+			import os, shutil, re
+			pattern = re.compile('(.*)/(\d{1,4})x(\d{1,4})/(.*)', re.IGNORECASE)
+			match = pattern.match(sys.argv[2])
+			cachedir = match.group(1)
+			print "Cachedir: "+match.group(1)
+			print "Size: "+match.group(2)+"x"+match.group(3)
+			print "File: "+match.group(4)
+			if not os.path.isdir(cachedir + '/Original'):
+				os.makedirs(cachedir + '/Original')
+				shutil.move(sys.argv[2], cachedir + '/Original/' + match.group(4))
+				os.rmdir(cachedir + '/' + match.group(2) + 'x' + match.group(3))
+			for symlink in Config['symbolicfolders']:
+				if not os.path.isdir(cachedir + '/' + symlink):
+					os.symlink(cachedir + '/Original', cachedir + '/' + symlink)
+		except:
+			return
 	
 class Serie:
 	fileName = None
