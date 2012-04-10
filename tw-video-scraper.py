@@ -176,9 +176,6 @@ def main():
 			pattern = re.compile('(.*)/(\d{1,4})x(\d{1,4})/(.*)', re.IGNORECASE)
 			match = pattern.match(sys.argv[2])
 			cachedir = match.group(1)
-			print "Cachedir: "+match.group(1)
-			print "Size: "+match.group(2)+"x"+match.group(3)
-			print "File: "+match.group(4)
 			if not os.path.isdir(cachedir + '/Original'):
 				os.makedirs(cachedir + '/Original')
 				shutil.move(sys.argv[2], cachedir + '/Original/' + match.group(4))
