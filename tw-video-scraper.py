@@ -466,7 +466,7 @@ class Movie:
 		if len(match.groups()) > 1:
 			# second match could also be avi,mkv,..., so check if it's an integer
 			try:
-				if int(match.group(2).strip()) == match.group(2).strip():
+				if int(match.group(2).strip()):
 					self.year = match.group(2).strip()
 			except:
 				self.year = None
