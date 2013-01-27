@@ -74,6 +74,18 @@ settings = {
 	# Set this to true to this for all images (requires PIL Image)
 	'fixjpeg': 'true',
 	
+	# Save a copy of the image file in the same folder as the movie
+	# if 'savelocal' is true, a copy will be saved
+	# 'savelocalfilename' controls the name of the local copy. If set to
+	# Folder.jpg, the name will be Folder.jpg. If left empty, the name of the
+	# local file is the same as the name of the input movie, with the extension
+	# replace by .jpg. Thus, movie.2012.avi will be saved as movie.2012.jpg
+	# 'savelocalwaysoverwrite' controls if a local file should be overwritten if
+	# if already exists
+	'savelocal': 'false',
+	'savelocalfilename': '',
+	'savelocalalwaysoverwrite': 'false',
+	
 	# If no thumbnail can be found, a thumbnail can be generated
 	# using the following command. Leave empty to disable generating
 	# thumbnails
@@ -94,6 +106,23 @@ def main():
 	if len(sys.argv) < 3:
 		print("Usage: tw-video-scraper.py inputmovie outputimage")
 		exit()
+
+	if Config['scaleoption'] == 'symlink':
+		# make symlinks
+		try:
+			import os, re
+			pattern = re.compile('(.*)/(\d{1,4})x(\d{1,4})/(.*)', re.IGNORECASE)
+			match = pattern.match(sys.argv[2])
+			cachedir = match.group(1)
+			if not os.path.isdir(cachedir + '/Original'):
+				os.makedirs(cachedir + '/Original')
+				os.rmdir(cachedir + '/' + match.group(2) + 'x' + match.group(3))
+
+			for symlink in Config['symbolicfolders']:
+				if not os.path.isdir(cachedir + '/' + symlink):
+					os.symlink(cachedir + '/Original', cachedir + '/' + symlink)
+		except:
+			print("Error in making symbolic link folders")
 	
 	# for windows path names
 	if sys.argv[1].find('\\') >= 0:
@@ -130,6 +159,36 @@ def main():
 			import Image
 			image = Image.open(sys.argv[2])
 			image.save(sys.argv[2])
+		except:
+			pass
+			
+	if Config['savelocal'] == 'true':
+		try:
+			if Config['savelocalfilename'] == '':
+				# if name is empty, take filename
+				file = sys.argv[1]
+				if file.find('/') >= 0:
+					file = file[file.rindex('/')+1:]
+				if file.find('.') >= 0:
+					file = file[0:file.rindex('.')] + '.jpg'
+			else:
+				file = Config['savelocalfilename']
+			
+			if file == '':
+				# something went wrong with the file name, exit 'savelocal'
+				pass
+				
+			folder = sys.argv[1]
+			if folder.find('/') >= 0:
+				folder = folder[0:folder.rindex('/')+1]
+			else:
+				folder = ''	
+									
+			import Image, os
+			
+			if not os.path.isfile(folder + file) or Config['savelocalalwaysoverwrite'] == 'true':
+				image = Image.open(sys.argv[2])
+				image.save(folder + file)
 		except:
 			pass
 
@@ -169,22 +228,7 @@ def main():
 		except:
 			return
 
-	if Config['scaleoption'] == 'symlink':
-		# make symlinks
-		try:
-			import os, shutil, re
-			pattern = re.compile('(.*)/(\d{1,4})x(\d{1,4})/(.*)', re.IGNORECASE)
-			match = pattern.match(sys.argv[2])
-			cachedir = match.group(1)
-			if not os.path.isdir(cachedir + '/Original'):
-				os.makedirs(cachedir + '/Original')
-				shutil.move(sys.argv[2], cachedir + '/Original/' + match.group(4))
-				os.rmdir(cachedir + '/' + match.group(2) + 'x' + match.group(3))
-			for symlink in Config['symbolicfolders']:
-				if not os.path.isdir(cachedir + '/' + symlink):
-					os.symlink(cachedir + '/Original', cachedir + '/' + symlink)
-		except:
-			return
+	
 	
 class Serie:
 	fileName = None
