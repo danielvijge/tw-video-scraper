@@ -309,8 +309,13 @@ class Serie:
 				data = json.load(apicall)			
 				pattern = re.compile('.*id%3D(\d+)%26.*', re.IGNORECASE)
 				match = pattern.match(data['responseData']['results'][0]['url'])
-				if match.group(1):
+				if match:
 					self.id = match.group(1)
+				else:
+				    print 'No id found'
+				    
+				if self.id and db.isEnabled() and self.inDB == False:
+					db.execute('INSERT INTO video (id,type,name) VALUES ('+str(db.escape(self.id))+',\'serie\',\''+db.escape(self.name)+'\')')
 		return self.id
 	
 	
