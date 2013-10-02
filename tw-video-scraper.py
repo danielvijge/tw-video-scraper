@@ -300,20 +300,18 @@ class Serie:
 				self.id = str(db.fetchrow()[0])
 				self.inDB = True
 		
-		if not self.id:
-			apicall = URL('http://www.thetvdb.com/api/GetSeries.php?language='+Config['tvdblang']+'&seriesname='+self.name).open()
-			if apicall:
-				from xml.etree.ElementTree import ElementTree
-				tree = ElementTree()
-				tree.parse(apicall)
-				for series in tree.findall('Series'):
-					if self._cleanupName(series.find('SeriesName').text) == self.name:
-						self.id = series.find('seriesid').text
-				
-				if self.id and db.isEnabled() and self.inDB == False:
-					db.execute('INSERT INTO video (id,type,name) VALUES ('+str(db.escape(self.id))+',\'serie\',\''+db.escape(self.name)+'\')')
-			else:
-				print("Could not connect to theTVDB.com server.")
+		if not self.id:import json
+			import urllib
+			import re
+
+			base = 'http://ajax.googleapis.com/ajax/services/search/web?v=1.0&'
+			query = urllib.urlencode({'q' : self.name+' Series Info site:thetvdb.com'})
+			response = urllib.urlopen(base + query).read()
+			data = json.loads(response)
+			
+			pattern = re.compile('.*id%3D(\d+)%26.*', re.IGNORECASE)
+			match = pattern.match(data['responseData']['results'][0]['url'])
+			self.id = match.group(1)
 		return self.id
 	
 	
@@ -344,15 +342,21 @@ class Serie:
 	
 	def _getTVDBThumbnail(self):
 		if self.id:
-			if self._getTVDBzipfile():
-				from xml.etree.ElementTree import ElementTree
-				tree = ElementTree()
-				tree.parse(Config['tmpdir']+self.id+'/'+Config['tvdblang']+'.xml')
-				for episode in tree.findall('Episode'):
-					if int(episode.find('SeasonNumber').text) == self.season and int(episode.find('EpisodeNumber').text) == self.episode:			
-						if episode.find('filename').text:		
-							self.thumbnail =  'http://www.thetvdb.com/banners/'+episode.find('filename').text
-							return True
+			# check if the file already exists
+			if os.path.isfile(Config['tmpdir']+self.id+'-'+Config['tvdblang']+'.xml'):
+				# if it is older than config['cacherenew'] days, delete the files and download again
+				if os.path.getctime(Config['tmpdir']+self.id+'-'+Config['tvdblang']+'.xml') < time.time()-(Config['cacherenew']*86400):
+					os.remove(Config['tmpdir']+self.id+'-'+Config['tvdblang']+'.xml')
+			if not os.path.isfile(Config['tmpdir']+self.id+'-'+Config['tvdblang']+'.xml'):
+				URL('http://www.thetvdb.com/api/'+Config['tvdbapikey']+'/series/'+self.id+'/all/'+Config['tvdblang']+'.xml').download(Config['tmpdir']+self.id+'-'+Config['tvdblang']+'.xml')
+			from xml.etree.ElementTree import ElementTree
+			tree = ElementTree()
+			tree.parse(Config['tmpdir']+self.id+'-'+Config['tvdblang']+'.xml')
+			for episode in tree.findall('Episode'):
+				if int(episode.find('SeasonNumber').text) == self.season and int(episode.find('EpisodeNumber').text) == self.episode:			
+					if episode.find('filename').text:		
+						self.thumbnail =  'http://www.thetvdb.com/banners/'+episode.find('filename').text
+						return True
 		return False
 	
 	def _cleanupFileName(self, name):
