@@ -33,7 +33,7 @@ the name of the video file, the second is the output image file.
 To use it with Twonky, save `tw-video-scraper.py`, `python-tw-video-scraper.desc` 
 and `python.location` in Twonky's cgi-bin directory. Make all files executable
 
-	chmod 700 tw-video-scraper.py python-python-tw-video-scraper.desc python.location
+	chmod 700 tw-video-scraper.py python-tw-video-scraper.desc python.location
 
 If needed, change the values in `python.location`, `tw-video-scraper.py`, and
 `python-tw-video-scraper.desc`.
