@@ -300,18 +300,17 @@ class Serie:
 				self.id = str(db.fetchrow()[0])
 				self.inDB = True
 		
-		if not self.id:import json
-			import urllib
+		if not self.id:
+			import json
 			import re
-
-			base = 'http://ajax.googleapis.com/ajax/services/search/web?v=1.0&'
-			query = urllib.urlencode({'q' : self.name+' Series Info site:thetvdb.com'})
-			response = urllib.urlopen(base + query).read()
-			data = json.loads(response)
 			
-			pattern = re.compile('.*id%3D(\d+)%26.*', re.IGNORECASE)
-			match = pattern.match(data['responseData']['results'][0]['url'])
-			self.id = match.group(1)
+			apicall = URL('http://ajax.googleapis.com/ajax/services/search/web?v=1.0&q='+self.name+' Series Info site:thetvdb.com').json()
+			if apicall:
+				data = json.load(apicall)			
+				pattern = re.compile('.*id%3D(\d+)%26.*', re.IGNORECASE)
+				match = pattern.match(data['responseData']['results'][0]['url'])
+				if match.group(1):
+					self.id = match.group(1)
 		return self.id
 	
 	
