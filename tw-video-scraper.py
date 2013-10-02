@@ -42,6 +42,12 @@ settings = {
 	# MovieDB api settings
 	'moviedbapikey': 'a8b9f96dde091408a03cb4c78477bd14',
 
+	# Preferred size for movie posters, in order of preferability
+	'preferred_poster_size': ['w342', 'original', 'w500', 'w185', 'w154', 'w92'],
+	# Base URL will be retrieved automatically. Fill this in if you run it without a database
+	# and want to limit the API calls to retrieve the configuration
+	'moviedb_base_url': '',
+
 	# Files downloaded from TVDB are stored in the tmpdir,
 	# and not downloaded if already present. If the file
 	# is too old, it will be deleted and downloaded again
@@ -239,6 +245,7 @@ class Serie:
 	season = None
 	episode = None
 	thumbnail = None
+	inDB = False
 	
 	def __init__(self, fileName):
 		self.fileName = fileName
@@ -291,6 +298,7 @@ class Serie:
 			db.execute('SELECT id FROM video WHERE type=\'serie\' and name=\''+db.escape(self.name)+'\'')		
 			if db.rowcount() > 0:
 				self.id = str(db.fetchrow()[0])
+				self.inDB = True
 		
 		if not self.id:
 			apicall = URL('http://www.thetvdb.com/api/GetSeries.php?language='+Config['tvdblang']+'&seriesname='+self.name).open()
@@ -302,7 +310,7 @@ class Serie:
 					if self._cleanupName(series.find('SeriesName').text) == self.name:
 						self.id = series.find('seriesid').text
 				
-				if self.id and db.isEnabled():
+				if self.id and db.isEnabled() and self.inDB == False:
 					db.execute('INSERT INTO video (id,type,name) VALUES ('+str(db.escape(self.id))+',\'serie\',\''+db.escape(self.name)+'\')')
 			else:
 				print("Could not connect to theTVDB.com server.")
@@ -375,11 +383,54 @@ class Movie:
 	year = None
 	id = None
 	thumbnail = None
+	base_url = None
+	poster_size = None
+	inDB = False
 	
 	def __init__(self, fileName):
 		self.fileName = fileName
+		self._checkMovieDBConfiguration()
 		self._parseFileName()
-	
+
+	def _checkMovieDBConfiguration(self):
+		import time
+
+		if db.isEnabled():
+			for row in db.execute('SELECT key,value,last_updated FROM config WHERE provider=\'themoviedb\''):
+				if row[0] == 'base_url' and row[2] > time.time() - 3600*24:
+					self.base_url = row[1]
+				if row[0] == 'poster_size' and row[2] > time.time() - 3600*24:	
+					self.poster_size = row[1]
+		elif Config['moviedb_base_url']:
+			self.base_url = Config['moviedb_base_url']
+			self.poster_size = Config['preferred_poster_size'][0]
+
+		# if the info is not set, retrieve it via API
+		if not self.base_url or not self.poster_size:
+			self._getMovieDBConfiguration()
+
+	def _getMovieDBConfiguration(self):
+		import json
+		apicall = URL('https://api.themoviedb.org/3/configuration?api_key='+Config['moviedbapikey']).json()
+		if apicall:
+			data = json.load(apicall)
+			
+			self.base_url = data['images']['base_url']
+			for poster_size in Config['preferred_poster_size']:
+				if poster_size in data['images']['poster_sizes']:
+					self.poster_size = poster_size
+					break
+			else:
+				# No preferred poster size could be found. Take the first one to prevent breaking
+				self.poster_size = data['images']['poster_sizes'][0]
+
+			if db.isEnabled():
+				db.execute('DELETE FROM config WHERE provider=\'themoviedb\'')
+				db.execute('INSERT INTO config (provider,key,value,last_updated) VALUES (\'themoviedb\',\'base_url\',\''+db.escape(self.base_url)+'\',strftime(\'%s\',\'now\'))')
+				db.execute('INSERT INTO config (provider,key,value,last_updated) VALUES (\'themoviedb\',\'poster_size\',\''+db.escape(self.poster_size)+'\',strftime(\'%s\',\'now\'))')
+		else:
+			print("Could not connect to TheMovieDB server to retrieve configuration")
+
 	def isMovie(self):
 		if self.name and self.id:
 			return True
@@ -390,8 +441,7 @@ class Movie:
 		return self.thumbnail
 		
 	def _getMovieDBThumbnail(self, name, year = None):
-		from xml.etree.ElementTree import ElementTree
-		tree = ElementTree()
+		import json
 		
 		match = False
 		
@@ -402,48 +452,49 @@ class Movie:
 				db.execute('SELECT id FROM video WHERE type=\'movie\' and name=\''+db.escape(name)+'\'')	
 			if db.rowcount() > 0:
 				self.id = str(db.fetchrow()[0])
-				apicall = URL('http://api.themoviedb.org/2.1/Movie.getInfo/en/xml/'+Config['moviedbapikey']+'/'+self.id).open()
+				self.inDB = True
+				apicall = URL('http://api.themoviedb.org/3/movie/'+self.id+'?api_key='+Config['moviedbapikey']).json()
+				if apicall:
+					movie = data = json.load(apicall)
+					match = True
 
 		if not self.id:
 			if year:
-				apicall = URL('http://api.themoviedb.org/2.1/Movie.search/en/xml/'+Config['moviedbapikey']+'/'+name+' '+year).open()
+				apicall = URL('http://api.themoviedb.org/3/search/movie?api_key='+Config['moviedbapikey']+'&query='+name+'&year='+year).json()
 			else:
-				apicall = URL('http://api.themoviedb.org/2.1/Movie.search/en/xml/'+Config['moviedbapikey']+'/'+name).open()
-		
-		if apicall:
-			tree.parse(apicall)
-			if int(tree.find('{%s}totalResults' % 'http://a9.com/-/spec/opensearch/1.1/').text) == 0:
-				# No results found, no need to parse everything
-				return False
-			if int(tree.find('{%s}totalResults' % 'http://a9.com/-/spec/opensearch/1.1/').text) == 1:
-				# If the search has only 1 result, assume that's the correct movie
-				match = True
-			
-			for movie in tree.findall('movies/movie'):
-				# try to match the name, and -if exist- the original name or alternative name
-				if self._cleanupName(movie.find('name').text) == name:
-					match = True
-				if movie.find('original_name').text:
-					if self._cleanupName(movie.find('original_name').text) == name:
-						match = True
-				if movie.find('alternative_name').text:
-					if self._cleanupName(movie.find('alternative_name').text) == name:
-						match = True
-				
-				if match:
-					
-					if db.isEnabled():
-						self.id = movie.find('id').text
-						if year:
-							db.execute('INSERT INTO video (id,type,name,year) VALUES ('+str(db.escape(self.id))+',\'movie\',\''+db.escape(name)+'\','+db.escape(year)+')')
-						else:
-							db.execute('INSERT INTO video (id,type,name,year) VALUES ('+str(db.escape(self.id))+',\'movie\',\''+db.escape(name)+'\')')	
+				apicall = URL('http://api.themoviedb.org/3/search/movie?api_key='+Config['moviedbapikey']+'&query='+name).json()
 
-					if movie.findall('images/image'):
-						for image in movie.findall('images/image'):
-							if image.attrib['type'] == 'poster' and image.attrib['size'] == 'cover':
-								self.thumbnail = image.attrib['url']
-								return True
+			if apicall:
+				data = json.load(apicall)
+				
+				if int(data['total_results']) == 0:
+					# No results found, no need to parse everything
+					return False
+				if int(data['total_results']) == 1:
+					# If the search has only 1 result, assume that it's the correct movie
+					match = True
+				
+				for movie in data['results']:
+					# try to match the name, and -if exist- the original name
+					if self._cleanupName(movie['title']) == name:
+						match = True
+						break
+					if movie['original_title']:
+						if self._cleanupName(movie['original_title']) == name:
+							match = True
+							break
+				
+		if match:
+			if db.isEnabled() and self.inDB == False:
+				self.id = movie['id']
+				if year:
+					db.execute('INSERT INTO video (id,type,name,year) VALUES ('+db.escape(str(self.id))+',\'movie\',\''+db.escape(name)+'\','+db.escape(str(year))+')')
+				else:
+					db.execute('INSERT INTO video (id,type,name,year) VALUES ('+db.escape(str(self.id))+',\'movie\',\''+db.escape(name)+'\')')	
+
+			if movie['poster_path']:
+				self.thumbnail = self.base_url + self.poster_size + movie['poster_path']
+				return True
 		
 		return False
 		
@@ -539,8 +590,9 @@ class Database:
 			
 				self._sql = sqlite3.connect(database)
 			
-				self._result = self._sql.execute('create table if not exists video (id int, type text, name text, year int)')
-				self._sql.commit()
+				self.execute('create table if not exists video (id int, type text, name text, year int)')
+				self.execute('create table if not exists config (provider text, key text, value text, last_updated int)')
+				
 				self._enabled = True
 			except:
 				print("Could not open/create database. Running without database...")
@@ -558,6 +610,7 @@ class Database:
 			self._sql.commit()
 			self._result = self._result.fetchall()
 			self._row = 0
+			return self._result
 		except:
 			return False
 	
@@ -577,6 +630,8 @@ class Database:
 	def fetchrow(self):
 		if not self._sql:
 			return False
+		if len(self._result) == 0:
+			return []
 		if len(self._result) <= self._row:
 			return None
 		t = self._result[self._row]
@@ -614,6 +669,13 @@ class URL:
 				return urllib.urlopen(self.url)
 			except:
 				return None
+
+	def json(self):
+		import urllib2
+		try:
+			return urllib2.urlopen(urllib2.Request(self.url, None, {'accept': 'application/json'}))
+		except:
+			return None
 	
 	def download(self, location):
 		if self.ver == 3:
