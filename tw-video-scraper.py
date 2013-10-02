@@ -525,7 +525,11 @@ class Movie:
 			self.path = self.fileName[0:self.fileName.rindex('/')+1]
 			# remove the last /
 			self.parentfolder = self.path[0:len(self.path)-1]
-			self.parentfolder = self.parentfolder[self.parentfolder.rindex('/')+1:]
+			# this can fail for files in the format ./movie.avi
+			try:
+				self.parentfolder = self.parentfolder[self.parentfolder.rindex('/')+1:]
+			except:
+				pass
 		else:
 			self.file = self.fileName
 		
