@@ -329,6 +329,11 @@ class Serie:
 			from xml.etree.ElementTree import ElementTree
 			tree = ElementTree()
 			tree.parse(Config['tmpdir']+self.id+'-'+Config['tvdblang']+'.xml')
+			if self.season == 1 and self.episode == 1:
+				series = tree.find('Series')
+				if series.find('poster').text:
+					self.thumbnail =  'http://www.thetvdb.com/banners/'+series.find('poster').text
+					return True
 			for episode in tree.findall('Episode'):
 				if int(episode.find('SeasonNumber').text) == self.season and int(episode.find('EpisodeNumber').text) == self.episode:			
 					if episode.find('filename').text:		
