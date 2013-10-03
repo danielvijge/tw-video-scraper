@@ -201,35 +201,9 @@ def main():
 	if Config['scaleoption'] == 'resize':
 		# resize the image
 		try:
-			import Image, re
-			# try to get the scale option using regular expression
-			pattern = re.compile('(.*)/(\d{1,4})x(\d{1,4})/(.*)', re.IGNORECASE)
-			match = pattern.match(sys.argv[2])
-			scalewidth = int(match.group(2))
-			scaleheight = int(match.group(3))
-			
+			import Image
 			image = Image.open(sys.argv[2])
-			
-			if Config['keepaspectratio'] == 'true':
-				imagenew = Image.new('RGB', (scaleheight, scalewidth))
-				imagewidth = image.size[0]
-				imageheight = image.size[1]
-				
-				# landscape or portait?
-				if imageheight > imagewidth:
-					imagewidth = int(imagewidth * (float(scaleheight)/float(imageheight)))
-					centreoffset = (scalewidth-imagewidth)/2
-					image = image.resize((imagewidth, scaleheight), Image.ANTIALIAS)
-					imagenew.paste(image, (centreoffset, 0))
-				else:
-					imageheight = int(imageheight * (float(scalewidth)/float(imagewidth)))
-					centreoffset = (scaleheight-imageheight)/2
-					image = image.resize((scalewidth, imageheight), Image.ANTIALIAS)
-					imagenew.paste(image, (0, centreoffset))
-				image = imagenew
-			else:
-				image = image.resize((scalewidth, scaleheight), Image.ANTIALIAS)
-			
+			image.thumbnail((300,300), Image.ANTIALIAS)
 			image.save(sys.argv[2])
 		except:
 			return
