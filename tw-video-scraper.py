@@ -301,8 +301,7 @@ class Serie:
 				self.inDB = True
 		
 		if not self.id:
-			import json
-			import re
+			import json, re
 			
 			apicall = URL('http://ajax.googleapis.com/ajax/services/search/web?v=1.0&q='+self.name+' Series Info site:thetvdb.com').json()
 			if apicall:
@@ -311,8 +310,7 @@ class Serie:
 				match = pattern.match(data['responseData']['results'][0]['url'])
 				if match:
 					self.id = match.group(1)
-				else:
-				    print 'No id found'
+
 				if self.id and db.isEnabled() and self.inDB == False:
 					db.execute('INSERT INTO video (id,type,name) VALUES ('+str(db.escape(self.id))+',\'serie\',\''+db.escape(self.name)+'\')')
 		return self.id
@@ -344,6 +342,7 @@ class Serie:
 		return False
 	
 	def _getTVDBThumbnail(self):
+		import os, time
 		if self.id:
 			# check if the file already exists
 			if os.path.isfile(Config['tmpdir']+self.id+'-'+Config['tvdblang']+'.xml'):
