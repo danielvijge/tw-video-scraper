@@ -311,7 +311,6 @@ class Serie:
 			if apicall:
 				data = json.load(apicall)
 
-
 				# Try to match the name from the file with the name from the search results
 				# After each result, increase the searchresult counter by 1
 				# If no exact match is found, assume that the first search result was the correct one
@@ -334,32 +333,6 @@ class Serie:
 				if self.id and db.isEnabled() and self.inDB == False:
 					db.execute('INSERT INTO video (id,type,name) VALUES ('+str(db.escape(self.id))+',\'serie\',\''+db.escape(self.name)+'\')')
 		return self.id
-	
-	
-	def _getTVDBzipfile(self):
-		import os, time
-		# make a temp dir if it does not exist
-		if not os.path.isdir(Config['tmpdir']+self.id):
-			os.makedirs(Config['tmpdir']+self.id)
-		# check if the file already exists
-		if os.path.isfile(Config['tmpdir']+self.id+'/'+Config['tvdblang']+'.xml'):
-			# if it is older than config['cacherenew'] days, delete the files and download again
-			if os.path.getctime(Config['tmpdir']+self.id+'/'+Config['tvdblang']+'.xml') < time.time()-(Config['cacherenew']*86400):
-				os.remove(Config['tmpdir']+self.id+'/'+Config['tvdblang']+'.xml')
-				os.remove(Config['tmpdir']+self.id+'/banners.xml')
-				os.remove(Config['tmpdir']+self.id+'/actors.xml')
-				os.remove(Config['tmpdir']+self.id+'.zip')
-		# if the file does not exists, download it
-		if not os.path.isfile(Config['tmpdir']+self.id+'/'+Config['tvdblang']+'.xml'):
-			if URL('http://www.thetvdb.com/api/'+Config['tvdbapikey']+'/series/'+self.id+'/all/'+Config['tvdblang']+'.zip').download(Config['tmpdir']+self.id+'.zip'):
-				Zip(Config['tmpdir']+self.id+'.zip').extract(Config['tmpdir']+self.id)			
-				return True
-		else:
-			# zip and xml file are already downloaded, no need to download again	
-			return True
-
-		print("Error retrieving/processing files from theTVDB.com")
-		return False
 	
 	def _getTVDBThumbnail(self):
 		import os, time
@@ -731,30 +704,6 @@ class URL:
 					return False
 			except:
 				return False
-
-class Zip:
-	zipfile = None
-	
-	def __init__(self, zipfile):
-		self.zipfile = zipfile
-	
-	def extract(self, location):
-		import zipfile, os
-		try:
-			if not location.endswith('/'):
-				location = location+'/'
-			fh = open(self.zipfile, 'rb')
-			z = zipfile.ZipFile(fh)
-			for name in z.namelist():
-				if name.endswith('/'):
-					os.makedirs(location+name)
-				else:
-					outfile = open(location+name, 'wb')
-					outfile.write(z.read(name))
-					outfile.close()
-			fh.close()
-		except:
-			return
 
 Config = dict(settings)
 db = Database(Config['database'])
