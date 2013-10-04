@@ -55,6 +55,10 @@ settings = {
 	# and download it again
 	'cacherenew': 6,
 
+	# Instead of a still from the episode, download the series poster for the first
+	# episode (pilot). This allows you to quickly identify the series as a whole
+	'posterforpilot': False,
+
 	# By default, images are stored in the cache folder under
 	# a subdirectory for the scale. E.g is a media renderer asks
 	# for a thumnail, it can request the scale, such as ?scale=100x100
@@ -370,7 +374,7 @@ class Serie:
 			from xml.etree.ElementTree import ElementTree
 			tree = ElementTree()
 			tree.parse(Config['tmpdir']+self.id+'-'+Config['tvdblang']+'.xml')
-			if self.season == 1 and self.episode == 1:
+			if Config['posterforpilot'] == True and self.season == 1 and self.episode == 1:
 				series = tree.find('Series')
 				if series.find('poster').text:
 					self.thumbnail =  'http://www.thetvdb.com/banners/'+series.find('poster').text
