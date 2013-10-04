@@ -305,9 +305,25 @@ class Serie:
 			
 			apicall = URL('http://ajax.googleapis.com/ajax/services/search/web?v=1.0&q='+self.name+' Series Info site:thetvdb.com').json()
 			if apicall:
-				data = json.load(apicall)			
+				data = json.load(apicall)
+
+
+				# Try to match the name from the file with the name from the search results
+				# After each result, increase the searchresult counter by 1
+				# If no exact match is found, assume that the first search result was the correct one
+				searchresult = 0
+				for serie in data['responseData']['results']:
+					pattern = re.compile('(.*?): Series Info - TheTVDB', re.IGNORECASE)
+					match = pattern.match(serie['titleNoFormatting'])
+					if match:
+						if self._cleanupName(match.group(1)) == self._cleanupName(self.name):
+							break
+					searchresult = searchresult+1
+				else:
+					searchresult = 0
+
 				pattern = re.compile('.*id%3D(\d+).*', re.IGNORECASE)
-				match = pattern.match(data['responseData']['results'][0]['url'])
+				match = pattern.match(data['responseData']['results'][searchresult]['url'])
 				if match:
 					self.id = match.group(1)
 
