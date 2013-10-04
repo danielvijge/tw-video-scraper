@@ -55,6 +55,10 @@ settings = {
 	# and download it again
 	'cacherenew': 6,
 
+	# Instead of a still from the episode, download the series poster for the first
+	# episode (pilot). This allows you to quickly identify the series as a whole
+	'posterforpilot': False,
+
 	# By default, images are stored in the cache folder under
 	# a subdirectory for the scale. E.g is a media renderer asks
 	# for a thumnail, it can request the scale, such as ?scale=100x100
@@ -301,58 +305,58 @@ class Serie:
 				self.inDB = True
 		
 		if not self.id:
-			apicall = URL('http://www.thetvdb.com/api/GetSeries.php?language='+Config['tvdblang']+'&seriesname='+self.name).open()
+			import json, re
+			
+			apicall = URL('http://ajax.googleapis.com/ajax/services/search/web?v=1.0&q='+self.name+' Series Info site:thetvdb.com').json()
 			if apicall:
-				from xml.etree.ElementTree import ElementTree
-				tree = ElementTree()
-				tree.parse(apicall)
-				for series in tree.findall('Series'):
-					if self._cleanupName(series.find('SeriesName').text) == self.name:
-						self.id = series.find('seriesid').text
-				
+				data = json.load(apicall)
+
+				# Try to match the name from the file with the name from the search results
+				# After each result, increase the searchresult counter by 1
+				# If no exact match is found, assume that the first search result was the correct one
+				searchresult = 0
+				for serie in data['responseData']['results']:
+					pattern = re.compile('(.*?): Series Info - TheTVDB', re.IGNORECASE)
+					match = pattern.match(serie['titleNoFormatting'])
+					if match:
+						if self._cleanupName(match.group(1)) == self._cleanupName(self.name):
+							break
+					searchresult = searchresult+1
+				else:
+					searchresult = 0
+
+				pattern = re.compile('.*id%3D(\d+).*', re.IGNORECASE)
+				match = pattern.match(data['responseData']['results'][searchresult]['url'])
+				if match:
+					self.id = match.group(1)
+
 				if self.id and db.isEnabled() and self.inDB == False:
 					db.execute('INSERT INTO video (id,type,name) VALUES ('+str(db.escape(self.id))+',\'serie\',\''+db.escape(self.name)+'\')')
-			else:
-				print("Could not connect to theTVDB.com server.")
 		return self.id
 	
-	
-	def _getTVDBzipfile(self):
-		import os, time
-		# make a temp dir if it does not exist
-		if not os.path.isdir(Config['tmpdir']+self.id):
-			os.makedirs(Config['tmpdir']+self.id)
-		# check if the file already exists
-		if os.path.isfile(Config['tmpdir']+self.id+'/'+Config['tvdblang']+'.xml'):
-			# if it is older than config['cacherenew'] days, delete the files and download again
-			if os.path.getctime(Config['tmpdir']+self.id+'/'+Config['tvdblang']+'.xml') < time.time()-(Config['cacherenew']*86400):
-				os.remove(Config['tmpdir']+self.id+'/'+Config['tvdblang']+'.xml')
-				os.remove(Config['tmpdir']+self.id+'/banners.xml')
-				os.remove(Config['tmpdir']+self.id+'/actors.xml')
-				os.remove(Config['tmpdir']+self.id+'.zip')
-		# if the file does not exists, download it
-		if not os.path.isfile(Config['tmpdir']+self.id+'/'+Config['tvdblang']+'.xml'):
-			if URL('http://www.thetvdb.com/api/'+Config['tvdbapikey']+'/series/'+self.id+'/all/'+Config['tvdblang']+'.zip').download(Config['tmpdir']+self.id+'.zip'):
-				Zip(Config['tmpdir']+self.id+'.zip').extract(Config['tmpdir']+self.id)			
-				return True
-		else:
-			# zip and xml file are already downloaded, no need to download again	
-			return True
-
-		print("Error retrieving/processing files from theTVDB.com")
-		return False
-	
 	def _getTVDBThumbnail(self):
+		import os, time
 		if self.id:
-			if self._getTVDBzipfile():
-				from xml.etree.ElementTree import ElementTree
-				tree = ElementTree()
-				tree.parse(Config['tmpdir']+self.id+'/'+Config['tvdblang']+'.xml')
-				for episode in tree.findall('Episode'):
-					if int(episode.find('SeasonNumber').text) == self.season and int(episode.find('EpisodeNumber').text) == self.episode:			
-						if episode.find('filename').text:		
-							self.thumbnail =  'http://www.thetvdb.com/banners/'+episode.find('filename').text
-							return True
+			# check if the file already exists
+			if os.path.isfile(Config['tmpdir']+self.id+'-'+Config['tvdblang']+'.xml'):
+				# if it is older than config['cacherenew'] days, delete the files and download again
+				if os.path.getctime(Config['tmpdir']+self.id+'-'+Config['tvdblang']+'.xml') < time.time()-(Config['cacherenew']*86400):
+					os.remove(Config['tmpdir']+self.id+'-'+Config['tvdblang']+'.xml')
+			if not os.path.isfile(Config['tmpdir']+self.id+'-'+Config['tvdblang']+'.xml'):
+				URL('http://www.thetvdb.com/api/'+Config['tvdbapikey']+'/series/'+self.id+'/all/'+Config['tvdblang']+'.xml').download(Config['tmpdir']+self.id+'-'+Config['tvdblang']+'.xml')
+			from xml.etree.ElementTree import ElementTree
+			tree = ElementTree()
+			tree.parse(Config['tmpdir']+self.id+'-'+Config['tvdblang']+'.xml')
+			if Config['posterforpilot'] == True and self.season == 1 and self.episode == 1:
+				series = tree.find('Series')
+				if series.find('poster').text:
+					self.thumbnail =  'http://www.thetvdb.com/banners/'+series.find('poster').text
+					return True
+			for episode in tree.findall('Episode'):
+				if int(episode.find('SeasonNumber').text) == self.season and int(episode.find('EpisodeNumber').text) == self.episode:			
+					if episode.find('filename').text:		
+						self.thumbnail =  'http://www.thetvdb.com/banners/'+episode.find('filename').text
+						return True
 		return False
 	
 	def _cleanupFileName(self, name):
@@ -700,30 +704,6 @@ class URL:
 					return False
 			except:
 				return False
-
-class Zip:
-	zipfile = None
-	
-	def __init__(self, zipfile):
-		self.zipfile = zipfile
-	
-	def extract(self, location):
-		import zipfile, os
-		try:
-			if not location.endswith('/'):
-				location = location+'/'
-			fh = open(self.zipfile, 'rb')
-			z = zipfile.ZipFile(fh)
-			for name in z.namelist():
-				if name.endswith('/'):
-					os.makedirs(location+name)
-				else:
-					outfile = open(location+name, 'wb')
-					outfile.write(z.read(name))
-					outfile.close()
-			fh.close()
-		except:
-			return
 
 Config = dict(settings)
 db = Database(Config['database'])
