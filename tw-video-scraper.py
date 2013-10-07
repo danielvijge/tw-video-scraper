@@ -307,9 +307,9 @@ class Serie:
 		if not self.id:
 			import json, re
 			
-			apicall = URL('http://ajax.googleapis.com/ajax/services/search/web?v=1.0&q='+self.name+' Series Info site:thetvdb.com').json()
+			apicall = URL('http://ajax.googleapis.com/ajax/services/search/web?v=1.0&q='+self.name+' Series Info site:thetvdb.com').json(True)
 			if apicall:
-				data = json.load(apicall)
+				data = json.loads(apicall)
 
 				# Try to match the name from the file with the name from the search results
 				# After each result, increase the searchresult counter by 1
@@ -415,9 +415,9 @@ class Movie:
 
 	def _getMovieDBConfiguration(self):
 		import json
-		apicall = URL('https://api.themoviedb.org/3/configuration?api_key='+Config['moviedbapikey']).json()
+		apicall = URL('https://api.themoviedb.org/3/configuration?api_key='+Config['moviedbapikey']).json(True)
 		if apicall:
-			data = json.load(apicall)
+			data = json.loads(apicall)
 			
 			self.base_url = data['images']['base_url']
 			for poster_size in Config['preferred_poster_size']:
@@ -457,19 +457,19 @@ class Movie:
 			if db.rowcount() > 0:
 				self.id = str(db.fetchrow()[0])
 				self.inDB = True
-				apicall = URL('http://api.themoviedb.org/3/movie/'+self.id+'?api_key='+Config['moviedbapikey']).json()
+				apicall = URL('http://api.themoviedb.org/3/movie/'+self.id+'?api_key='+Config['moviedbapikey']).json(True)
 				if apicall:
-					movie = data = json.load(apicall)
+					movie = data = json.loads(apicall)
 					match = True
 
 		if not self.id:
 			if year:
-				apicall = URL('http://api.themoviedb.org/3/search/movie?api_key='+Config['moviedbapikey']+'&query='+name+'&year='+year).json()
+				apicall = URL('http://api.themoviedb.org/3/search/movie?api_key='+Config['moviedbapikey']+'&query='+name+'&year='+year).json(True)
 			else:
-				apicall = URL('http://api.themoviedb.org/3/search/movie?api_key='+Config['moviedbapikey']+'&query='+name).json()
+				apicall = URL('http://api.themoviedb.org/3/search/movie?api_key='+Config['moviedbapikey']+'&query='+name).json(True)
 
 			if apicall:
-				data = json.load(apicall)
+				data = json.loads(apicall)
 				
 				if int(data['total_results']) == 0:
 					# No results found, no need to parse everything
@@ -678,12 +678,27 @@ class URL:
 			except:
 				return None
 
-	def json(self):
-		import urllib2
-		try:
-			return urllib2.urlopen(urllib2.Request(self.url, None, {'accept': 'application/json'}))
-		except:
-			return None
+	def json(self, asString = False):
+		if self.ver == 3:
+			import urllib.request
+			try:
+				response = urllib.request.urlopen(urllib.request.Request(self.url, None, {'accept': 'application/json'}))
+				if asString:
+					return response.read().decode('utf-8')
+				else:
+					return response
+			except:
+				return None
+		else:
+			import urllib2
+			try:
+				response = urllib2.urlopen(urllib2.Request(self.url, None, {'accept': 'application/json'}))
+				if asString:
+					return response.read()
+				else:
+					return response
+			except:
+				return None
 	
 	def download(self, location):
 		if self.ver == 3:
