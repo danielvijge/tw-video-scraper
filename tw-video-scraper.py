@@ -325,7 +325,7 @@ class Serie:
 				else:
 					searchresult = 0
 
-				pattern = re.compile('.*id%3D(\d+).*', re.IGNORECASE)
+				pattern = re.compile('.*?id%3D(\d+).*', re.IGNORECASE)
 				match = pattern.match(data['responseData']['results'][searchresult]['url'])
 				if match:
 					self.id = match.group(1)
