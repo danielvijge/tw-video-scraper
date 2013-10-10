@@ -346,17 +346,20 @@ class Serie:
 				URL('http://www.thetvdb.com/api/'+Config['tvdbapikey']+'/series/'+self.id+'/all/'+Config['tvdblang']+'.xml').download(Config['tmpdir']+self.id+'-'+Config['tvdblang']+'.xml')
 			from xml.etree.ElementTree import ElementTree
 			tree = ElementTree()
-			tree.parse(Config['tmpdir']+self.id+'-'+Config['tvdblang']+'.xml')
-			if Config['posterforpilot'] == True and self.season == 1 and self.episode == 1:
-				series = tree.find('Series')
-				if series.find('poster').text:
-					self.thumbnail =  'http://www.thetvdb.com/banners/'+series.find('poster').text
-					return True
-			for episode in tree.findall('Episode'):
-				if int(episode.find('SeasonNumber').text) == self.season and int(episode.find('EpisodeNumber').text) == self.episode:			
-					if episode.find('filename').text:		
-						self.thumbnail =  'http://www.thetvdb.com/banners/'+episode.find('filename').text
+			try:
+				tree.parse(Config['tmpdir']+self.id+'-'+Config['tvdblang']+'.xml')
+				if Config['posterforpilot'] == True and self.season == 1 and self.episode == 1:
+					series = tree.find('Series')
+					if series.find('poster').text:
+						self.thumbnail =  'http://www.thetvdb.com/banners/'+series.find('poster').text
 						return True
+				for episode in tree.findall('Episode'):
+					if int(episode.find('SeasonNumber').text) == self.season and int(episode.find('EpisodeNumber').text) == self.episode:			
+						if episode.find('filename').text:		
+							self.thumbnail =  'http://www.thetvdb.com/banners/'+episode.find('filename').text
+							return True
+			except:
+				pass
 		return False
 	
 	def _cleanupFileName(self, name):
