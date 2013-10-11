@@ -11,6 +11,13 @@ settings = {
 	# downloaded again.
 	'tmpdir': r'/tmp/tw-video-scraper/',
 
+	# Log level
+	# 1: ERROR only
+	# 2: ERROR and WARNING
+	# 3: ERROR, WARNING, and INFO
+	# 4: ERROR, WARNING, INFO, and DEBUG
+	'loglevel': 3,
+
 	# List of name of the parent directories
 	# Used for matching the directory name of the name
 	# of a movie/serie. By knowing the parent dir,the
@@ -114,7 +121,7 @@ def main():
 	
 	# Validate input arguments
 	if len(sys.argv) < 3:
-		print("Usage: tw-video-scraper.py inputmovie outputimage")
+		Console.text("Usage: tw-video-scraper.py inputmovie outputimage")
 		exit()
 
 	if Config['scaleoption'] == 'symlink':
@@ -132,7 +139,7 @@ def main():
 				if not os.path.isdir(cachedir + '/' + symlink):
 					os.symlink(cachedir + '/Original', cachedir + '/' + symlink)
 		except:
-			print("Error in making symbolic link folders")
+			Console.error("Error in making symbolic link folders")
 	
 	# for windows path names
 	if sys.argv[1].find('\\') >= 0:
@@ -147,22 +154,22 @@ def main():
 		thumbnail = movie.getThumbnail()
 
 	if thumbnail:
-		print("Downloading file "+thumbnail+"...")
+		Console.info("Downloading file "+thumbnail+"...")
 		URL(thumbnail).download(sys.argv[2])
 	else:
 		file = sys.argv[1]
 		if file.find('/') >= 0:
 			file = file[file.rindex('/')+1:]
 			
-		print("Could not get enough information from file name '"+file+"'")
+		Console.warning("Could not get enough information from file name '"+file+"'")
 		if Config['generatecommand'] != '':
-			print("Generating thumbnail...")
+			Console.info("Generating thumbnail...")
 			try:
 				import os
 				Config['generatecommand'] = Config['generatecommand'].replace('$infile',sys.argv[1]).replace('$outfile',sys.argv[2])
 				os.system(Config['generatecommand'])
 			except:
-				print("Failed to execute generate thumbnail command")
+				Console.error("Failed to execute generate thumbnail command")
 				
 	if Config['fixjpeg'] == 'true':
 		try:
@@ -436,7 +443,7 @@ class Movie:
 				db.execute('INSERT INTO config (provider,key,value,last_updated) VALUES (\'themoviedb\',\'base_url\',\''+db.escape(self.base_url)+'\',strftime(\'%s\',\'now\'))')
 				db.execute('INSERT INTO config (provider,key,value,last_updated) VALUES (\'themoviedb\',\'poster_size\',\''+db.escape(self.poster_size)+'\',strftime(\'%s\',\'now\'))')
 		else:
-			print("Could not connect to TheMovieDB server to retrieve configuration")
+			Console.error("Could not connect to TheMovieDB server to retrieve configuration")
 
 	def isMovie(self):
 		if self.name and self.id:
@@ -606,9 +613,9 @@ class Database:
 				
 				self._enabled = True
 			except:
-				print("Could not open/create database. Running without database...")
+				Console.warning("Could not open/create database. Running without database...")
 		else:
-			print("Database disabled. Running without database...")
+			Console.info("Database disabled. Running without database...")
 
 	def isEnabled(self):
 		return self._enabled
@@ -682,6 +689,7 @@ class URL:
 				return None
 
 	def json(self, asString = False):
+		Console.debug('Retrieving JSON for ' + self.url)
 		if self.ver == 3:
 			import urllib.request
 			try:
@@ -723,7 +731,58 @@ class URL:
 			except:
 				return False
 
+class PrintLog:
+	_YELLOW = '\033[33m'
+	_BLUE = '\033[94m'
+	_GREEN = '\033[32m'
+	_RED = '\033[31m'
+	_ENDC = '\033[0m'
+
+	_loglevel = 0
+
+	def __init__(self, loglevel = 3):
+		self._loglevel = loglevel
+
+	def _print(self, text, texttype):
+		STARTCOLOUR = ''
+		ENDSEQ = ''
+		if texttype == 'error':
+			STARTCOLOUR = self._RED
+			ENDSEQ = self._ENDC
+		elif texttype == 'warning':
+			STARTCOLOUR = self._YELLOW
+			ENDSEQ = self._ENDC
+		elif texttype == 'info':
+			STARTCOLOUR = ''
+			ENDSEQ = ''
+		elif texttype == 'debug':
+			STARTCOLOUR = self._BLUE
+			ENDSEQ = self._ENDC
+
+		print(STARTCOLOUR + text + ENDSEQ)
+
+	def text(self, text):
+		if self._loglevel >= 0:
+			self._print(text, 'text')
+
+	def error(self, text):
+		if self._loglevel >= 1:
+			self._print(text, 'error')
+
+	def warning(self, text):
+		if self._loglevel >= 2:
+			self._print(text, 'warning')
+
+	def info(self, text):
+		if self._loglevel >= 3:
+			self._print(text, 'info')
+
+	def debug(self, text):
+		if self._loglevel >= 4:
+			self._print(text, 'debug')
+		
 Config = dict(settings)
+Console = PrintLog(Config['loglevel'])
 db = Database(Config['database'])
 main()
 db.close()
