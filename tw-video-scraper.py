@@ -488,15 +488,16 @@ class Movie:
 					# If the search has only 1 result, assume that it's the correct movie
 					match = True
 				
-				for movie in data['results']:
-					# try to match the name, and -if exist- the original name
-					if self._cleanupName(movie['title']) == name:
-						match = True
-						break
-					if movie['original_title']:
-						if self._cleanupName(movie['original_title']) == name:
+				if match == False:
+					for movie in data['results']:
+						# try to match the name, and -if exist- the original name
+						if self._cleanupName(movie['title']) == name:
 							match = True
 							break
+						if movie['original_title']:
+							if self._cleanupName(movie['original_title']) == name:
+								match = True
+								break
 				
 		if match:
 			if db.isEnabled() and self.inDB == False:
