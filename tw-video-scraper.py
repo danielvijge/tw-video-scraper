@@ -17,6 +17,8 @@ settings = {
 	# 3: ERROR, WARNING, and INFO
 	# 4: ERROR, WARNING, INFO, and DEBUG
 	'loglevel': 3,
+	# Different kind of messages are coloured
+	'colouredoutput': True,
 
 	# List of name of the parent directories
 	# Used for matching the directory name of the name
@@ -741,8 +743,15 @@ class PrintLog:
 
 	_loglevel = 0
 
-	def __init__(self, loglevel = 3):
+	def __init__(self, loglevel = 3, colour = True):
 		self._loglevel = loglevel
+
+		if colour == False:
+			self._YELLOW = ''
+			self._BLUE = ''
+			self._GREEN = ''
+			self._RED = ''
+			self._ENDC = ''
 
 	def _print(self, text, texttype):
 		STARTCOLOUR = ''
@@ -783,7 +792,7 @@ class PrintLog:
 			self._print(text, 'debug')
 		
 Config = dict(settings)
-Console = PrintLog(Config['loglevel'])
+Console = PrintLog(Config['loglevel'], Config['colouredoutput'])
 db = Database(Config['database'])
 main()
 db.close()
