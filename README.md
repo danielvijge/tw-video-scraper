@@ -45,6 +45,11 @@ Now restart Twonky, and the script is used.
 
 At least `jpeg-scale.desc` and `cgi-jpegscale` plugin must also be enabled.
 
+## Requirements
+
+* Python 2.6 or higher (works with Python 3)
+* Python Image Library (optional)
+
 ## How it works
 
 Thumbnail for series are retrieved from TheTVDB.com. For movies, TheMovieDB.org is
