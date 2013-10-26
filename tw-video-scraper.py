@@ -57,6 +57,10 @@ settings = {
 	# and want to limit the API calls to retrieve the configuration
 	'moviedb_base_url': '',
 
+	# Always guess a movie when no exact match can be found. It will take the first results from
+	# the search results set. This has no effect when no results can be found
+	'alwaysguessmovie': False,
+
 	# Files downloaded from TVDB are stored in the tmpdir,
 	# and not downloaded if already present. If the file
 	# is too old, it will be deleted and downloaded again
@@ -507,6 +511,10 @@ class Movie:
 							if self._cleanupName(movie['original_title']) == name:
 								match = True
 								break
+
+				if match == False and Config['alwaysguessmovie'] == True:
+					movie = data['results'][0]
+					match = True
 				
 		if match:
 			if db.isEnabled() and self.inDB == False:
