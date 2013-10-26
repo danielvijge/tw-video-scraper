@@ -130,18 +130,24 @@ def main():
 		# make symlinks
 		try:
 			import os, re
+			create_symlink = False
 			pattern = re.compile('(.*)/(\d{1,4})x(\d{1,4})/(.*)', re.IGNORECASE)
 			match = pattern.match(sys.argv[2])
 			cachedir = match.group(1)
 			if not os.path.isdir(cachedir + '/Original'):
 				os.makedirs(cachedir + '/Original')
 				os.rmdir(cachedir + '/' + match.group(2) + 'x' + match.group(3))
-
-			for symlink in Config['symbolicfolders']:
-				if not os.path.isdir(cachedir + '/' + symlink):
-					os.symlink(cachedir + '/Original', cachedir + '/' + symlink)
+			create_symlink = True
 		except:
-			Console.error("Error in making symbolic link folders")
+			Console.debug("Could not parse image size from image folder name")
+
+		if create_symlink == True:
+			try:
+				for symlink in Config['symbolicfolders']:
+					if not os.path.isdir(cachedir + '/' + symlink):
+						os.symlink(cachedir + '/Original', cachedir + '/' + symlink)
+			except:
+				Console.error("Error in making symbolic link folders")
 	
 	# for windows path names
 	if sys.argv[1].find('\\') >= 0:
