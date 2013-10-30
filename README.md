@@ -123,10 +123,15 @@ of the database. Add a new line to the database with the serie name and the corr
 ID, and the script will then always use this ID.
 
 	$ sqlite3 tw-video-scraper.db
+For a series
 	>> insert into video (id,type,name) values (TVDB_ID,'serie','foo bar 2011');
-or
+or for a movie
 
 	>> insert into video (id,type,name) values (MOVIEDB_ID,'movie','foo bar');
+or, with the optional year parameter
+
+	>> insert into video (id,type,name) values (MOVIEDB_ID,'movie','foo bar', 2011);
+To quit Sqlite
 	>> .exit
 
 ## Windows users

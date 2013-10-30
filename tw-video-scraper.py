@@ -522,7 +522,7 @@ class Movie:
 				if year:
 					db.execute('INSERT INTO video (id,type,name,year) VALUES ('+db.escape(str(self.id))+',\'movie\',\''+db.escape(name)+'\','+db.escape(str(year))+')')
 				else:
-					db.execute('INSERT INTO video (id,type,name,year) VALUES ('+db.escape(str(self.id))+',\'movie\',\''+db.escape(name)+'\')')	
+					db.execute('INSERT INTO video (id,type,name) VALUES ('+db.escape(str(self.id))+',\'movie\',\''+db.escape(name)+'\')')	
 
 			if movie['poster_path']:
 				self.thumbnail = self.base_url + self.poster_size + movie['poster_path']
