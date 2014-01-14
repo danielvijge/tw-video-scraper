@@ -26,6 +26,18 @@ settings = {
 	# script knows if it should analyse the name
 	# E.g. ~/download/my.movie.2011.avi vs. ~/download/My.Movie.2011/part1.avi
 	'parentdir': ['download','series','movies','sample'],
+
+	# These two parameters can be used to exclude folders/files
+	# from this script. The first is a list of files/folders for which
+	# the script will never query TVDB/MovieDB API. Instead is will immediately
+	# start the generatecommand (ffmpeg).
+	# The second is a list of files/folders which are completely ignored. Not even
+	# the generatecommand will be executed
+	# These values are not case sensitive
+	# Be careful with exclusions, these are matched against the whole path, e.g. if you
+	# exclude 'home', everything from /home/username will be ignored 
+	'alwaysgenerate': [],
+	'alwaysignore': [],
 	
 	# Regular expression patterns to determine if
 	# a file is a series. First match should product
@@ -130,6 +142,16 @@ def main():
 		Console.text("Usage: tw-video-scraper.py inputmovie outputimage")
 		exit()
 
+	# for windows path names
+	if sys.argv[1].find('\\') >= 0:
+		sys.argv[1] = sys.argv[1].replace('\\','/')
+
+	# Check if part of the path is in the alwayignore option
+	for ignore in Config['alwaysignore']:
+		if sys.argv[1].lower().count(ignore.lower()) > 0:
+			Console.text("Ignoring file because of explicit configuration ('alwaysignore')")
+			exit()
+
 	if Config['scaleoption'] == 'symlink':
 		# make symlinks
 		try:
@@ -152,10 +174,6 @@ def main():
 						os.symlink(cachedir + '/Original', cachedir + '/' + symlink)
 			except:
 				Console.error("Error in making symbolic link folders")
-	
-	# for windows path names
-	if sys.argv[1].find('\\') >= 0:
-		sys.argv[1] = sys.argv[1].replace('\\','/')
 
 	serie = Serie(sys.argv[1])
 	
@@ -165,7 +183,13 @@ def main():
 		movie = Movie(sys.argv[1])
 		thumbnail = movie.getThumbnail()
 
-	if thumbnail:
+	# Check if part of the path is in the alwaysgenerate option
+	alwaysgenerate = False
+	for ignore in Config['alwaysgenerate']:
+		if sys.argv[1].lower().count(ignore.lower()) > 0:
+			alwaysgenerate = True
+
+	if thumbnail and alwaysgenerate == False:
 		Console.info("Downloading file "+thumbnail+"...")
 		URL(thumbnail).download(sys.argv[2])
 	else:
@@ -173,7 +197,11 @@ def main():
 		if file.find('/') >= 0:
 			file = file[file.rindex('/')+1:]
 			
-		Console.warning("Could not get enough information from file name '"+file+"'")
+		if alwaysgenerate == True:
+			Console.info("Generate thumbnail because of explicit configuration ('alwaysgenerate')")
+		else:
+			Console.warning("Could not get enough information from file name '"+file+"'")
+
 		if Config['generatecommand'] != '':
 			Console.info("Generating thumbnail...")
 			try:
