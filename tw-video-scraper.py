@@ -421,6 +421,8 @@ class Serie:
 		return name
 	
 	def _cleanupName(self, name):
+		if type(name) is unicode:
+			name = name.encode('utf8')
 		name = name.lower()
 		name = name.replace(':','')
 		name = name.replace('/','')
@@ -567,6 +569,8 @@ class Movie:
 		return name
 		
 	def _cleanupName(self, name):
+		if type(name) is unicode:
+			name = name.encode('utf8')
 		name = name.lower()
 		name = name.replace(':','')
 		name = name.replace('/','')
@@ -715,10 +719,10 @@ class URL:
 	ver = 2
 	
 	def __init__(self, url):
-		import sys
+		import sys, urllib
 		if sys.version_info[0] > 2:
 			self.ver = 3
-		self.url = url.replace(' ','%20')
+		self.url = urllib.quote_plus(url, ':/?=&')
 		
 	def open(self):
 		if self.ver == 3:
