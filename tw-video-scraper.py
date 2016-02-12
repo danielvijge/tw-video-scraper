@@ -645,36 +645,43 @@ class Dir:
 
 	def exists(self):
 		import os
+		Console.debug("Checking if directory " + self._path + " exists..." + str(os.path.isdir(self._path)))
 		return os.path.isdir(self._path)
 
 	def create(self):
 		import os
 		if not self.exists():
 			try:
+				Console.debug("Creating directory " + self._path)
 				os.makedirs(self._path)
 				return True
 			except:
-				Console.debug("Error while creating directory")
+				pass
+		Console.warning("Error while creating directory")
 		return False
 
 	def delete(self):
 		import os
 		if self.exists():
 			try:
+				Console.debug("Deleting directory " + self._path)
 				os.rmdir(self._path)
 				return True
 			except:
-				Console.debug("Error while deleting directory")
+				pass
+		Console.warning("Error while deleting directory")
 		return False
 
 	def symlink(self, source):
 		import os
 		if not self.exists():
 			try:
+				Console.debug("Creating symbolic link from " + self._path + " to " + source)
 				os.symlink(source, self._path)
 				return True
 			except:
-				Console.debug("Error while creating symlink")
+				pass
+		Console.warning("Error while creating symlink")
 		return False
 
 class Database:
