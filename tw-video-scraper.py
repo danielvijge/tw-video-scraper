@@ -132,6 +132,8 @@ def main():
 	
 	if not Config['tmpdir'].endswith('/'):
 		Config['tmpdir'] = Config['tmpdir']+'/'
+
+	Dir(Config['tmpdir']).create()
 	
 	inputfile = None
 	inputdirectory = None
@@ -160,20 +162,16 @@ def main():
 			pattern = re.compile('(.*)/(\d{1,4})x(\d{1,4})/(.*)', re.IGNORECASE)
 			match = pattern.match(sys.argv[2])
 			cachedir = match.group(1)
-			if not os.path.isdir(cachedir + '/Original'):
-				os.makedirs(cachedir + '/Original')
-				os.rmdir(cachedir + '/' + match.group(2) + 'x' + match.group(3))
+			if not Dir(cachedir + '/Original').exists():
+				Dir(cachedir + '/Original').create()
+				Dir(cachedir + '/' + match.group(2) + 'x' + match.group(3)).delete()
 			create_symlink = True
 		except:
 			Console.debug("Could not parse image size from image folder name")
 
 		if create_symlink == True:
-			try:
-				for symlink in Config['symbolicfolders']:
-					if not os.path.isdir(cachedir + '/' + symlink):
-						os.symlink(cachedir + '/Original', cachedir + '/' + symlink)
-			except:
-				Console.error("Error in making symbolic link folders")
+			for symlink in Config['symbolicfolders']:
+					Dir(cachedir + '/' + symlink).symlink('Original')
 
 	serie = Serie(sys.argv[1])
 	
@@ -638,7 +636,47 @@ class Movie:
 			return True
 			
 		return False
-		
+
+class Dir:
+	_path = None
+
+	def __init__(self, path):
+		self._path = path 
+
+	def exists(self):
+		import os
+		return os.path.isdir(self._path)
+
+	def create(self):
+		import os
+		if not self.exists():
+			try:
+				os.makedirs(self._path)
+				return True
+			except:
+				Console.debug("Error while creating directory")
+		return False
+
+	def delete(self):
+		import os
+		if self.exists():
+			try:
+				os.rmdir(self._path)
+				return True
+			except:
+				Console.debug("Error while deleting directory")
+		return False
+
+	def symlink(self, source):
+		import os
+		if not self.exists():
+			try:
+				os.symlink(source, self._path)
+				return True
+			except:
+				Console.debug("Error while creating symlink")
+		return False
+
 class Database:
 	_sql = None
 	_result = None
@@ -653,8 +691,7 @@ class Database:
 				dbdir = Config['database'].replace('\\','/')
 				if dbdir.find('/') >= 0:
 					dbdir = dbdir[0:dbdir.rindex('/')+1]
-				if not os.path.isdir(dbdir):
-					os.makedirs(dbdir)
+				Dir(dbdir).create()
 			
 				self._sql = sqlite3.connect(database)
 			
