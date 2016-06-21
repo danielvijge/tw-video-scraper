@@ -11,6 +11,10 @@ settings = {
 	# downloaded again.
 	'tmpdir': r'/tmp/tw-video-scraper/',
 
+	# Custom Google search settings
+	'cse_search_id': r'002558229229908757257:rgbds9nawvu',
+	'cse_api_key': r'AIzaSyAe6fFFQPLbY5o71iYNjArRqo3a6Zxm_c4',
+
 	# Log level
 	# 1: ERROR only
 	# 2: ERROR and WARNING
@@ -352,17 +356,16 @@ class Serie:
 		if not self.id:
 			import json, re
 			
-			apicall = URL('http://ajax.googleapis.com/ajax/services/search/web?v=1.0&q='+self.name+' Series Info site:thetvdb.com').json(True)
+			apicall = URL('https://www.googleapis.com/customsearch/v1?q='+self.name+'+Series+Info&cx='+settings['cse_search_id']+'&key='+settings['cse_api_key']).json(True)
 			if apicall:
 				data = json.loads(apicall)
-
 				# Try to match the name from the file with the name from the search results
 				# After each result, increase the searchresult counter by 1
 				# If no exact match is found, assume that the first search result was the correct one
 				searchresult = 0
-				for serie in data['responseData']['results']:
-					pattern = re.compile('(.*?): Series Info - TheTVDB', re.IGNORECASE)
-					match = pattern.match(serie['titleNoFormatting'])
+				for serie in data['items']:
+					pattern = re.compile('(.*?): Series Info', re.IGNORECASE)
+					match = pattern.match(serie['title'])
 					if match:
 						if self._cleanupName(match.group(1)) == self._cleanupName(self.name):
 							break
@@ -370,8 +373,8 @@ class Serie:
 				else:
 					searchresult = 0
 
-				pattern = re.compile('.*?id%3D(\d+).*', re.IGNORECASE)
-				match = pattern.match(data['responseData']['results'][searchresult]['url'])
+				pattern = re.compile('.*?id=(\d+).*', re.IGNORECASE)
+				match = pattern.match(data['items'][searchresult]['link'])
 				if match:
 					self.id = match.group(1)
 
